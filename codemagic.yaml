@@ -53,10 +53,6 @@ workflows:
         notify:
           success: true
           failure: true
-      google_play:
-        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        track: internal # Can be internal, alpha, beta, production
-        submit_as_draft: true
 
   android-development:
     name: Android Development Build
