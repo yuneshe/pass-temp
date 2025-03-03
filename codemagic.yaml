@@ -1,0 +1,100 @@
+workflows:
+  android-production:
+    name: Android Production Build
+    max_build_duration: 60
+    instance_type: linux
+    environment:
+      node: 18.17.1
+      java: 11
+      groups:
+        - google_play
+      vars:
+        PACKAGE_NAME: "com.passtemp"
+    
+    cache:
+      cache_paths:
+        - $CM_BUILD_DIR/node_modules -> package-lock.json
+        - $CM_BUILD_DIR/android/.gradle -> android/build.gradle
+    
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install
+          npx expo install
+      
+      - name: Setup Android project
+        script: |
+          npx expo prebuild -p android --clean
+      
+      - name: Set up app signing
+        script: |
+          echo $CM_KEYSTORE | base64 --decode > $CM_KEYSTORE_PATH
+          cat >> "$CM_BUILD_DIR/android/key.properties" << EOF
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=$CM_KEYSTORE_PATH
+          EOF
+      
+      - name: Build Android release
+        script: |
+          cd android
+          ./gradlew bundleRelease
+          ./gradlew assembleRelease
+    
+    artifacts:
+      - android/app/build/outputs/bundle/**/*.aab
+      - android/app/build/outputs/apk/**/*.apk
+    
+    publishing:
+      email:
+        recipients:
+          - user@example.com
+        notify:
+          success: true
+          failure: true
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal # Can be internal, alpha, beta, production
+        submit_as_draft: true
+
+  android-development:
+    name: Android Development Build
+    max_build_duration: 60
+    instance_type: linux
+    environment:
+      node: 18.17.1
+      java: 11
+      vars:
+        PACKAGE_NAME: "com.passtemp"
+    
+    cache:
+      cache_paths:
+        - $CM_BUILD_DIR/node_modules -> package-lock.json
+        - $CM_BUILD_DIR/android/.gradle -> android/build.gradle
+    
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install
+          npx expo install
+      
+      - name: Setup Android project
+        script: |
+          npx expo prebuild -p android --clean
+      
+      - name: Build Android debug
+        script: |
+          cd android
+          ./gradlew assembleDebug
+    
+    artifacts:
+      - android/app/build/outputs/apk/**/*.apk
+    
+    publishing:
+      email:
+        recipients:
+          - user@example.com
+        notify:
+          success: true
+          failure: true
