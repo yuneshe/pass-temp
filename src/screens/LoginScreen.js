@@ -13,6 +13,7 @@ import { AnimatedInput } from '../components/AnimatedInput';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { AnimatedBackground } from '../components/AnimatedBackground';
 import { useAuth } from '../context/AuthContext';
+import { ScreenLayout } from '../components/ScreenLayout';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -53,8 +54,7 @@ export default function LoginScreen({ navigation }) {
   const isValid = email.length > 0 && password.length > 0;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <AnimatedBackground />
+    <ScreenLayout>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
@@ -117,7 +117,7 @@ export default function LoginScreen({ navigation }) {
           </View>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }
 

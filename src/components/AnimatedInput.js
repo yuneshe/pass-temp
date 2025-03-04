@@ -1,14 +1,6 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, TextInput, View, TouchableOpacity, Text } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-  interpolate,
-} from 'react-native-reanimated';
-
-const AnimatedView = Animated.createAnimatedComponent(View);
+import { TextInput, Animated, StyleSheet, View, TouchableOpacity, Text } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
 export const AnimatedInput = ({
   placeholder,
@@ -21,49 +13,59 @@ export const AnimatedInput = ({
   style,
   ...props
 }) => {
-  const focused = useSharedValue(0);
-  const filled = useSharedValue(value ? 1 : 0);
+  const { theme } = useTheme();
+  const focused = new Animated.Value(0);
+  const filled = new Animated.Value(value ? 1 : 0);
 
   useEffect(() => {
-    filled.value = withTiming(value ? 1 : 0);
+    Animated.timing(filled, {
+      toValue: value ? 1 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
   }, [value]);
 
-  const containerStyle = useAnimatedStyle(() => {
-    const scale = interpolate(
-      focused.value,
-      [0, 1],
-      [1, 1.02]
-    );
-
-    return {
-      transform: [{ scale }],
-      backgroundColor: interpolate(
-        focused.value,
-        [0, 1],
-        ['rgba(242, 242, 247, 1)', 'rgba(242, 242, 247, 0.9)']
-      ),
-    };
-  });
+  const containerStyle = {
+    transform: [
+      {
+        scale: focused.interpolate({
+          inputRange: [0, 1],
+          outputRange: [1, 1.02],
+        }),
+      },
+    ],
+    backgroundColor: focused.interpolate({
+      inputRange: [0, 1],
+      outputRange: [theme.surface, theme.surface],
+    }),
+  };
 
   const handleFocus = () => {
-    focused.value = withSpring(1);
+    focused.setValue(1);
   };
 
   const handleBlur = () => {
-    focused.value = withSpring(0);
+    focused.setValue(0);
   };
 
   return (
-    <AnimatedView style={[styles.container, containerStyle, style]}>
+    <Animated.View style={[styles.container, containerStyle, style]}>
       <TextInput
-        style={styles.input}
+        style={[
+          styles.input,
+          {
+            backgroundColor: theme.surface,
+            color: theme.textPrimary,
+            borderColor: theme.border,
+          },
+        ]}
         placeholder={placeholder}
         value={value}
         onChangeText={onChangeText}
         onFocus={handleFocus}
         onBlur={handleBlur}
         secureTextEntry={secureTextEntry && !showPassword}
-        placeholderTextColor="#999"
+        placeholderTextColor={theme.textSecondary}
         {...props}
       />
       {showPasswordOption && (
@@ -76,7 +78,7 @@ export const AnimatedInput = ({
           </Text>
         </TouchableOpacity>
       )}
-    </AnimatedView>
+    </Animated.View>
   );
 };
 
@@ -84,7 +86,6 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
     borderRadius: 25,
     paddingHorizontal: 20,
     height: 50,

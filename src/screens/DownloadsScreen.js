@@ -24,6 +24,9 @@ import * as Sharing from 'expo-sharing';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { MaterialCard } from '../components/MaterialCard';
+import { SearchBar } from '../components/SearchBar';
+import { ScreenLayout } from '../components/ScreenLayout';
 
 const DOWNLOADS_STORAGE_KEY = '@downloads';
 
@@ -130,7 +133,6 @@ const DownloadCard = ({ item, onPress, onDelete, index }) => {
           styles.card,
           { 
             borderColor: '#ddd',
-            width: isTablet ? (width - 48) / 2 : width - 32,
           }
         ]}
       >
@@ -204,7 +206,7 @@ const DownloadCard = ({ item, onPress, onDelete, index }) => {
   );
 };
 
-export default function DownloadsScreen({ navigation, route }) {
+const DownloadsScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const [downloads, setDownloads] = useState([]);
@@ -500,60 +502,30 @@ export default function DownloadsScreen({ navigation, route }) {
   const SearchAndFilterHeader = () => {
     const { t } = useTranslation();
     return (
-      <LinearGradient
-        colors={['#E6E6FA', '#F0F0FF']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={styles.headerGradientContainer}
-      >
+      <View style={[styles.header, { backgroundColor: theme.surface, marginTop: Platform.OS === 'android' ? 0 : 8 }]}>
         <View style={styles.searchContainer}>
-          <View style={styles.searchInputContainer}>
-            <Icon 
-              name="search" 
-              size={20} 
-              color="#333" 
-              style={styles.searchIcon} 
-            />
-            <TextInput
-              style={styles.searchInput}
-              placeholder={t('downloadsScreen.search.placeholder')}
-              placeholderTextColor="#666"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            {searchQuery ? (
-              <TouchableOpacity 
-                onPress={() => setSearchQuery('')}
-                style={styles.clearSearchButton}
-              >
-                <Icon 
-                  name="close-circle" 
-                  size={20} 
-                  color="#333" 
-                />
-              </TouchableOpacity>
-            ) : null}
-          </View>
-
-          <TouchableOpacity 
-            style={[
-              styles.filterButton, 
-              { 
-                backgroundColor: dateFilter.startDate && dateFilter.endDate 
-                  ? 'rgba(0,0,0,0.1)' 
-                  : 'transparent' 
-              }
-            ]}
-            onPress={() => setDateFilterModalVisible(true)}
-          >
-            <Icon 
-              name="calendar" 
-              size={20} 
-              color="#333"
-            />
-          </TouchableOpacity>
+          <Icon name="search-outline" size={20} color={theme.textSecondary} style={styles.searchIcon} />
+          <TextInput
+            style={[styles.searchInput, { color: theme.text }]}
+            placeholder={t('downloadsScreen.search.placeholder')}
+            placeholderTextColor={theme.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery ? (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Icon name="close-circle" size={20} color={theme.textSecondary} />
+            </TouchableOpacity>
+          ) : null}
         </View>
-      </LinearGradient>
+        
+        <TouchableOpacity 
+          style={[styles.filterButton, { backgroundColor: theme.surfaceVariant }]}
+          onPress={() => setDateFilterModalVisible(true)}
+        >
+          <Icon name="calendar" size={20} color={theme.primary} />
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -686,10 +658,52 @@ export default function DownloadsScreen({ navigation, route }) {
   const loadDownloads = async () => {
     try {
       const storedDownloads = await AsyncStorage.getItem(DOWNLOADS_STORAGE_KEY);
-      return storedDownloads ? JSON.parse(storedDownloads) : {};
+      if (!storedDownloads) return [];
+      
+      const downloads = JSON.parse(storedDownloads);
+      return Array.isArray(downloads) ? downloads : Object.values(downloads);
     } catch (error) {
       console.error('Error loading downloads:', error);
-      return {};
+      return [];
+    }
+  };
+
+  const fetchDownloads = async () => {
+    try {
+      const storedDownloads = await loadDownloads();
+      console.log('Loaded downloads:', storedDownloads);
+      
+      // Get file info for each download
+      const downloadsList = await Promise.all(
+        storedDownloads.map(async (download) => {
+          try {
+            const fileInfo = await FileSystem.getInfoAsync(download.file_path);
+            console.log('File info for', download.title, ':', fileInfo);
+            return {
+              ...download,
+              fileInfo: fileInfo.exists ? fileInfo : null
+            };
+          } catch (error) {
+            console.error('Error getting file info for', download.title, ':', error);
+            return download;
+          }
+        })
+      );
+
+      // Sort by date and filter out downloads with missing files
+      const validDownloads = downloadsList
+        .filter(download => download.fileInfo)
+        .sort((a, b) => new Date(b.downloadDate) - new Date(a.downloadDate));
+
+      console.log('Valid downloads:', validDownloads);
+      setDownloads(validDownloads);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching downloads:', err);
+      setError(t('downloadsScreen.error'));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -705,64 +719,13 @@ export default function DownloadsScreen({ navigation, route }) {
 
       // Remove from storage
       const downloads = await loadDownloads();
-      delete downloads[item.id];
-      await AsyncStorage.setItem(DOWNLOADS_STORAGE_KEY, JSON.stringify(downloads));
+      const updatedDownloads = downloads.filter(d => d.id !== item.id);
+      await AsyncStorage.setItem(DOWNLOADS_STORAGE_KEY, JSON.stringify(updatedDownloads));
       
       return true;
     } catch (error) {
       console.error('Error removing download:', error);
       return false;
-    }
-  };
-
-  const fetchDownloads = async () => {
-    try {
-      const storedDownloads = await loadDownloads();
-      
-      // Get file info for each download
-      const downloadsList = await Promise.all(
-        Object.values(storedDownloads).map(async (download) => {
-          try {
-            const fileInfo = await FileSystem.getInfoAsync(download.file_path);
-            return {
-              ...download,
-              fileInfo: fileInfo.exists ? fileInfo : null
-            };
-          } catch (error) {
-            console.error('Error getting file info:', error);
-            return download;
-          }
-        })
-      );
-
-      // Sort by date and filter out downloads with missing files
-      const validDownloads = downloadsList
-        .filter(download => download.fileInfo)
-        .sort((a, b) => new Date(b.downloadDate) - new Date(a.downloadDate));
-
-      setDownloads(validDownloads);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching downloads:', err);
-      setError(t('downloadsScreen.error'));
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const handleDeleteDownload = async (item) => {
-    try {
-      const success = await removeDownload(item);
-      if (success) {
-        fetchDownloads();
-        Alert.alert(t('downloadsScreen.success'), t('downloadsScreen.removeSuccess'));
-      } else {
-        throw new Error('Failed to remove download');
-      }
-    } catch (error) {
-      console.error('Error removing download:', error);
-      Alert.alert(t('downloadsScreen.error'), t('downloadsScreen.removeError'));
     }
   };
 
@@ -780,14 +743,21 @@ export default function DownloadsScreen({ navigation, route }) {
       item={item} 
       index={index}
       onPress={() => handleDownloadCardPress(item)}
-      onDelete={() => handleDeleteDownload(item)}
+      onDelete={() => removeDownload(item)}
     />
   );
 
   return (
-    <SafeScreen>
-      <StatusBar />
+    <ScreenLayout>
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="transparent" 
+        translucent 
+      />
       
+      {/* Status bar spacer */}
+      <View style={{ height: StatusBar.currentHeight || 0 }} />
+
       <SearchAndFilterHeader />
       <DateFilterModal 
         visible={isDateFilterModalVisible}
@@ -823,7 +793,7 @@ export default function DownloadsScreen({ navigation, route }) {
           }
         />
       )}
-    </SafeScreen>
+    </ScreenLayout>
   );
 }
 
@@ -831,56 +801,74 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  headerGradientContainer: {
-    padding: 16,
-  },
   header: {
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
-    paddingBottom: 24,
-  },
-  headerContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.23,
+    shadowRadius: 2.62,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    gap: 12,
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 4,
-    letterSpacing: 0.5,
+  searchContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F0F0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 40,
   },
-  headerSubtitle: {
-    fontSize: 15,
-    opacity: 0.8,
+  searchIcon: {
+    marginRight: 8,
   },
-  headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    padding: 0,
+    height: '100%',
+  },
+  filterButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   list: {
     padding: 16,
-    paddingTop: 8,
+    width: '100%',
+    flexGrow: 1,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 32,
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
   },
   card: {
-    borderRadius: 16,
+    width: '100%',
     marginBottom: 16,
-    borderWidth: 1,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -954,36 +942,6 @@ const styles = StyleSheet.create({
   error: {
     fontSize: 16,
     textAlign: 'center',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  searchInputContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-  },
-  filterButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
   },
   modalOverlay: {
     flex: 1,
@@ -1092,3 +1050,5 @@ const styles = StyleSheet.create({
     color: 'white',
   },
 });
+
+export default DownloadsScreen;

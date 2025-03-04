@@ -27,6 +27,7 @@ import api from '../config/api';
 import { AnimatedBackground } from '../components/AnimatedBackground';
 import { Easing } from 'react-native';
 import BottomSheetModal from '../components/BottomSheetModal';
+import { ScreenLayout } from '../components/ScreenLayout';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -472,159 +473,161 @@ export default function ChatScreen() {
   }, [selectedSubject]);
 
   return (
-    <SafeScreen style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#6803FF" />
-      <AnimatedBackground />
-      
-      <ChatScreenHeader
-        title={selectedSubject ? selectedSubject.name : t('chat.title')}
-        onBack={selectedSubject ? handleBackPress : undefined}
-        onAdd={() => setNewChatVisible(true)}
-        showAdd={!!selectedSubject}
-      />
-      
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Icon name="search" size={20} color="#6803FF" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={t('chat.searchPlaceholder')}
-            value={searchQuery}
-            onChangeText={handleSearch}
-            placeholderTextColor="#999"
-          />
-          {searchQuery ? (
-            <TouchableOpacity 
-              onPress={() => {
-                setSearchQuery('');
-                fetchSubjects('');
-              }}
-              style={styles.clearButton}
-            >
-              <Icon name="close-circle" size={20} color="#999" />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </View>
-
-      <View style={styles.content}>
-        {loading && !refreshing ? (
-          <View style={styles.centerContent}>
-            <ActivityIndicator size="large" color="#6803FF" />
-          </View>
-        ) : error ? (
-          <View style={styles.centerContent}>
-            <Icon name="alert-circle-outline" size={48} color="#6803FF" />
-            <Text style={styles.errorText}>
-              {error}
-            </Text>
-            <Button
-              title="Try Again"
-              onPress={selectedSubject ? fetchChats : () => fetchSubjects(searchQuery)}
-              variant="secondary"
-              style={styles.retryButton}
-            />
-          </View>
-        ) : (
-          <FlatList
-            data={selectedSubject ? chats : subjects}
-            renderItem={({ item, index }) => 
-              selectedSubject ? (
-                <ChatItem
-                  chat={item}
-                  onPress={handleChatPress}
-                  index={index}
-                />
-              ) : (
-                <ChatSubjectItem
-                  subject={item}
-                  onPress={() => handleSubjectPress(item)}
-                  index={index}
-                />
-              )
-            }
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={styles.listContent}
-            ListEmptyComponent={
-              !loading && !error && (
-                <EmptyState
-                  message={selectedSubject ? 'No chats in this subject yet' : 'No subjects available'}
-                  theme={theme}
-                />
-              )
-            }
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                colors={['#6803FF']}
-                tintColor="#6803FF"
-              />
-            }
-          />
-        )}
-      </View>
-
-      <BottomSheetModal
-        visible={newChatVisible}
-        onClose={() => {
-          setNewChatVisible(false);
-          setNewChatTitle('');
-        }}
-        height={0.4}
+    <ScreenLayout>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
       >
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>
-            Create New Chat
-          </Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter chat title"
-            placeholderTextColor="#666666"
-            value={newChatTitle}
-            onChangeText={setNewChatTitle}
-            autoFocus
-          />
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
-              onPress={() => {
-                setNewChatVisible(false);
-                setNewChatTitle('');
-              }}
-            >
-              <Text style={styles.buttonText}>
-                Cancel
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                styles.createButton,
-                { opacity: !newChatTitle.trim() || creatingChat ? 0.5 : 1 }
-              ]}
-              onPress={handleCreateChat}
-              disabled={!newChatTitle.trim() || creatingChat}
-            >
-              {creatingChat ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={styles.createButtonText}>
-                  Create Chat
-                </Text>
-              )}
-            </TouchableOpacity>
+        <ChatScreenHeader
+          title={selectedSubject ? selectedSubject.name : t('chat.title')}
+          onBack={selectedSubject ? handleBackPress : undefined}
+          onAdd={() => setNewChatVisible(true)}
+          showAdd={!!selectedSubject}
+        />
+        
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Icon name="search" size={20} color="#6803FF" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={t('chat.searchPlaceholder')}
+              value={searchQuery}
+              onChangeText={handleSearch}
+              placeholderTextColor="#999"
+            />
+            {searchQuery ? (
+              <TouchableOpacity 
+                onPress={() => {
+                  setSearchQuery('');
+                  fetchSubjects('');
+                }}
+                style={styles.clearButton}
+              >
+                <Icon name="close-circle" size={20} color="#999" />
+              </TouchableOpacity>
+            ) : null}
           </View>
         </View>
-      </BottomSheetModal>
-    </SafeScreen>
+
+        <View style={styles.content}>
+          {loading && !refreshing ? (
+            <View style={styles.centerContent}>
+              <ActivityIndicator size="large" color="#6803FF" />
+            </View>
+          ) : error ? (
+            <View style={styles.centerContent}>
+              <Icon name="alert-circle-outline" size={48} color="#6803FF" />
+              <Text style={styles.errorText}>
+                {error}
+              </Text>
+              <Button
+                title="Try Again"
+                onPress={selectedSubject ? fetchChats : () => fetchSubjects(searchQuery)}
+                variant="secondary"
+                style={styles.retryButton}
+              />
+            </View>
+          ) : (
+            <FlatList
+              data={selectedSubject ? chats : subjects}
+              renderItem={({ item, index }) => 
+                selectedSubject ? (
+                  <ChatItem
+                    chat={item}
+                    onPress={handleChatPress}
+                    index={index}
+                  />
+                ) : (
+                  <ChatSubjectItem
+                    subject={item}
+                    onPress={() => handleSubjectPress(item)}
+                    index={index}
+                  />
+                )
+              }
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={styles.listContent}
+              ListEmptyComponent={
+                !loading && !error && (
+                  <EmptyState
+                    message={selectedSubject ? 'No chats in this subject yet' : 'No subjects available'}
+                    theme={theme}
+                  />
+                )
+              }
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={handleRefresh}
+                  colors={['#6803FF']}
+                  tintColor="#6803FF"
+                />
+              }
+            />
+          )}
+        </View>
+
+        <BottomSheetModal
+          visible={newChatVisible}
+          onClose={() => {
+            setNewChatVisible(false);
+            setNewChatTitle('');
+          }}
+          height={0.4}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              Create New Chat
+            </Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter chat title"
+              placeholderTextColor="#666666"
+              value={newChatTitle}
+              onChangeText={setNewChatTitle}
+              autoFocus
+            />
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[styles.button, styles.cancelButton]}
+                onPress={() => {
+                  setNewChatVisible(false);
+                  setNewChatTitle('');
+                }}
+              >
+                <Text style={styles.buttonText}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  styles.createButton,
+                  { opacity: !newChatTitle.trim() || creatingChat ? 0.5 : 1 }
+                ]}
+                onPress={handleCreateChat}
+                disabled={!newChatTitle.trim() || creatingChat}
+              >
+                {creatingChat ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.createButtonText}>
+                    Create Chat
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </BottomSheetModal>
+      </KeyboardAvoidingView>
+    </ScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   header: {
     height: Platform.OS === 'ios' ? 100 : 70,

@@ -10,45 +10,43 @@ import {
   Platform,
   useWindowDimensions,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Text from '../components/Text';
-import SafeScreen from '../components/SafeScreen';
 import { useTheme } from '../context/ThemeContext';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Animated, { 
-  FadeInDown, 
-  FadeInRight,
-  useAnimatedStyle,
-  withSpring,
-  useSharedValue,
-} from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
 import api from '../config/api';
-import { AnimatedBackground } from '../components/AnimatedBackground';
+import { ScreenLayout } from '../components/ScreenLayout';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 const FeatureCard = ({ title, icon, gradient, onPress, delay }) => {
-  const scale = useSharedValue(1);
   const { theme } = useTheme();
+  const scale = new Animated.Value(1);
   
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }]
-  }));
-
   const handlePressIn = () => {
-    scale.value = withSpring(0.95);
+    Animated.spring(scale, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1);
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const animatedStyle = {
+    transform: [{ scale }]
   };
 
   return (
     <AnimatedTouchable
-      entering={FadeInDown.delay(delay).springify()}
       style={[animatedStyle, styles.cardWrapper]}
       onPress={onPress}
       onPressIn={handlePressIn}
@@ -71,82 +69,27 @@ const FeatureCard = ({ title, icon, gradient, onPress, delay }) => {
   );
 };
 
-const RecentActivityCard = ({ item, onPress, delay }) => {
-  const scale = useSharedValue(1);
-  const { theme } = useTheme();
-  
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }]
-  }));
-
-  const handlePressIn = () => {
-    scale.value = withSpring(0.95);
-  };
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1);
-  };
-
-  const getActivityIcon = () => {
-    switch (item.type) {
-      case 'download':
-        return 'download-outline';
-      case 'view':
-        return 'eye-outline';
-      case 'bookmark':
-        return 'bookmark-outline';
-      default:
-        return 'document-outline';
-    }
-  };
-
-  return (
-    <AnimatedTouchable
-      entering={FadeInRight.delay(delay).springify()}
-      style={[animatedStyle]}
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-    >
-      <LinearGradient
-        colors={[theme.surfaceVariant, theme.surface]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={[styles.recentCard, { borderColor: theme.border }]}
-      >
-        <View style={[styles.activityIconContainer, { backgroundColor: theme.primary }]}>
-          <Icon name={getActivityIcon()} size={20} color="#FFF" />
-        </View>
-        <View style={styles.recentCardContent}>
-          <Text 
-            style={[styles.recentCardTitle, { color: theme.textPrimary }]} 
-            numberOfLines={2}
-          >
-            {item.title}
-          </Text>
-          <Text style={[styles.recentCardTime, { color: theme.textSecondary }]}>
-            {new Date(item.date).toLocaleDateString()}
-          </Text>
-        </View>
-      </LinearGradient>
-    </AnimatedTouchable>
-  );
-};
-
 const MaterialCard = ({ item, onPress, delay }) => {
-  const scale = useSharedValue(1);
   const { theme } = useTheme();
+  const { t } = useTranslation();
+  const scale = new Animated.Value(1);
   
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }]
-  }));
-
   const handlePressIn = () => {
-    scale.value = withSpring(0.95);
+    Animated.spring(scale, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1);
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const animatedStyle = {
+    transform: [{ scale }]
   };
 
   const getFileIcon = (fileType) => {
@@ -178,10 +121,19 @@ const MaterialCard = ({ item, onPress, delay }) => {
 
   const fileType = item.file_url?.split('.').pop();
   const fileIcon = getFileIcon(fileType);
+  
+  const getFormattedPrice = (price) => {
+    if (!price || parseFloat(price) === 0 || price === '0.00') {
+      return t('Free');
+    }
+    return `${parseFloat(price).toLocaleString()} XAF`;
+  };
+  
+  const formattedPrice = getFormattedPrice(item.price);
+  const subjectName = item.subject?.name || item.subject || '';
 
   return (
     <AnimatedTouchable
-      entering={FadeInRight.delay(delay).springify()}
       style={[animatedStyle]}
       onPress={onPress}
       onPressIn={handlePressIn}
@@ -193,432 +145,349 @@ const MaterialCard = ({ item, onPress, delay }) => {
         end={{ x: 0, y: 1 }}
         style={[styles.recentCard, { borderColor: theme.border }]}
       >
+        <View style={[styles.fileIconContainer, { backgroundColor: theme.primary }]}>
+          <Icon name={fileIcon} size={24} color="#FFF" />
+        </View>
         <View style={styles.recentCardContent}>
           <Text 
             style={[styles.recentCardTitle, { color: theme.textPrimary }]} 
             numberOfLines={2}
           >
-            {item.title}
+            {typeof item.title === 'string' ? item.title : 'Untitled'}
           </Text>
-          <Text style={[styles.recentCardTime, { color: theme.textSecondary }]}>
-            {new Date(item.created_at).toLocaleDateString()}
-          </Text>
-          <View style={styles.metadataContainer}>
-            {item.subject?.name && (
-              <View style={styles.metadataItem}>
-                <Icon name="book-outline" size={14} color={theme.textSecondary} />
-                <Text style={[styles.metadataText, { color: theme.textSecondary }]}>
-                  {item.subject.name}
+          {item.description && (
+            <Text 
+              style={[styles.description, { color: theme.textSecondary }]}
+              numberOfLines={2}
+            >
+              {item.description}
+            </Text>
+          )}
+          <View style={styles.cardMetaContainer}>
+            {subjectName ? (
+              <View style={[styles.subjectTag, { backgroundColor: theme.primaryContainer }]}>
+                <Text style={[styles.subjectText, { color: theme.onPrimaryContainer }]} numberOfLines={1}>
+                  {subjectName}
                 </Text>
               </View>
-            )}
-            <View style={styles.metadataItem}>
-              <Icon name={fileIcon} size={14} color={theme.textSecondary} />
-              <Text style={[styles.metadataText, { color: theme.textSecondary }]}>
-                {fileType?.toUpperCase() || 'FILE'}
-              </Text>
-            </View>
+            ) : null}
+            <Text style={[styles.priceText, { color: theme.primary }]}>
+              {formattedPrice}
+            </Text>
           </View>
         </View>
-        
-        {item.thumbnail_url ? (
+        {item.thumbnail_url && (
           <Image 
             source={{ uri: item.thumbnail_url }} 
             style={styles.thumbnail}
             resizeMode="cover"
           />
-        ) : (
-          <View style={[styles.thumbnailPlaceholder, { backgroundColor: theme.primary }]}>
-            <Icon name={fileIcon} size={24} color="#FFF" />
-          </View>
         )}
       </LinearGradient>
     </AnimatedTouchable>
   );
 };
 
-export default function HomeScreen({ navigation }) {
-  const { theme } = useTheme();
+const HomeScreen = ({ navigation }) => {
   const { t } = useTranslation();
-  const { width } = useWindowDimensions();
-  const CARD_WIDTH = width > 500 ? width * 0.3 : width * 0.42;
-  const [recentMaterials, setRecentMaterials] = useState([]);
+  const { theme } = useTheme();
+  const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [notificationCount, setNotificationCount] = useState(0);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        console.log('Fetching materials...');
+        const response = await api.materials.getMaterials({ limit: 5, sort: '-created_at' });
+        console.log('API Response:', response);
+        
+        if (response && response.items) {
+          setMaterials(response.items.slice(0, 5));
+          console.log('Set materials:', response.items.slice(0, 5));
+        } else {
+          console.log('No items found in response');
+          setMaterials([]);
+        }
+      } catch (error) {
+        console.error('Error loading materials:', error);
+        setMaterials([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
 
   const features = [
-    { 
-      title: t('home.features.browseMaterials'),
+    {
+      title: t('Materials'),
       icon: 'library-outline',
-      gradient: ['#6366F1', '#818CF8'],
-      onPress: () => navigation.navigate('Materials', { mode: 'find' })
+      gradient: ['#4CAF50', '#2E7D32'],
+      onPress: () => navigation.navigate('Materials')
     },
-    { 
-      title: t('home.features.myDownloads'),
-      icon: 'download-outline',
-      gradient: ['#EC4899', '#F472B6'],
-      onPress: () => navigation.navigate('Downloads')
+    {
+      title: t('Assignments'),
+      icon: 'clipboard-outline',
+      gradient: ['#2196F3', '#1565C0'],
+      onPress: () => navigation.navigate('Assignments')
     },
-    { 
-      title: t('home.features.searchMaterials'),
-      icon: 'search-outline',
-      gradient: ['#8B5CF6', '#A78BFA'],
-      onPress: () => navigation.navigate('Materials', { mode: 'all', showSearch: true })
+    {
+      title: t('Chat'),
+      icon: 'chatbubbles-outline',
+      gradient: ['#9C27B0', '#6A1B9A'],
+      onPress: () => navigation.navigate('Chat')
     },
-    { 
-      title: t('home.features.myProfile'),
-      icon: 'person-outline',
-      gradient: ['#14B8A6', '#2DD4BF'],
-      onPress: () => navigation.navigate('Profile')
+    {
+      title: t('Settings'),
+      icon: 'settings-outline',
+      gradient: ['#FF9800', '#EF6C00'],
+      onPress: () => navigation.navigate('Settings')
     },
   ];
 
-  const loadRecentMaterials = async () => {
-    try {
-      setLoading(true);
-      const response = await api.materials.getMaterials({
-        sortBy: 'newest',
-        limit: 5
-      });
-      
-      if (response && response.items) {
-        setRecentMaterials(response.items);
-      }
-    } catch (error) {
-      console.error('Error loading recent materials:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchNotifications = async () => {
-    try {
-      const response = await api.notifications.getUnread();
-      setNotificationCount(response?.count || 0);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    }
-  };
-
-  useEffect(() => {
-    loadRecentMaterials();
-    fetchNotifications();
-  }, []);
-
   return (
-    <SafeScreen style={styles.container}>
-      <StatusBar 
-        barStyle="light-content"
-        backgroundColor="#6803FF"
-      />
-      <AnimatedBackground />
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.contentContainer,
-          { paddingBottom: 56 }
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        <LinearGradient
-          colors={[theme.primary + '20', theme.background]}
-          style={styles.headerGradient}
-        >
-          <View style={styles.header}>
-            <View style={styles.welcomeSection}>
-              <Text style={[styles.greeting, { color: theme.textPrimary }]}>
-                {t('home.welcome')}
-              </Text>
-              <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-                {t('home.subtitle')}
-              </Text>
-            </View>
-            <View style={styles.headerRight}>
-              <LottieView
-                source={require('../assets/animations/education.json')}
-                autoPlay
-                loop
-                style={styles.headerAnimation}
-              />
-              <TouchableOpacity 
-                style={[styles.notificationButton, { backgroundColor: theme.surfaceVariant }]}
-                onPress={() => navigation.navigate('Notifications')}
-              >
-                <Icon name="notifications-outline" size={24} color={theme.textPrimary} />
-                {notificationCount > 0 && (
-                  <View style={[styles.notificationBadge, { backgroundColor: theme.primary }]}>
-                    <Text style={styles.notificationBadgeText}>
-                      {notificationCount > 99 ? '99+' : notificationCount}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            </View>
+    <ScreenLayout>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <View style={styles.welcomeContainer}>
+            <Image 
+              source={require('../assets/images/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={[styles.greeting, { color: theme.textPrimary }]}>
+              {t('Welcome Back')}
+            </Text>
           </View>
-        </LinearGradient>
-
-        <View style={[styles.section, styles.featuresSection]}>
-          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
-            {t('home.quickAccess')}
+          <Text style={[styles.subGreeting, { color: theme.textSecondary }]}>
+            {t('Access your study materials')}
           </Text>
-          <View style={styles.featuresGrid}>
-            {features.map((feature, index) => (
-              <FeatureCard
-                key={feature.title}
-                {...feature}
-                delay={index * 100}
-                style={{ width: CARD_WIDTH }}
-              />
-            ))}
-          </View>
         </View>
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
-              {t('home.recentMaterials')}
-            </Text>
-            <TouchableOpacity 
-              onPress={() => navigation.navigate('Materials')}
-              style={styles.seeAllButton}
-            >
-              <Text style={[styles.seeAllText, { color: theme.primary }]}>
-                {t('home.seeAll')}
-              </Text>
-              <Icon name="chevron-forward" size={16} color={theme.primary} />
-            </TouchableOpacity>
-          </View>
-          
+        <View style={styles.featuresGrid}>
+          {features.map((feature, index) => (
+            <FeatureCard
+              key={index}
+              title={feature.title}
+              icon={feature.icon}
+              gradient={feature.gradient}
+              onPress={feature.onPress}
+              delay={index * 100}
+            />
+          ))}
+        </View>
+
+        <View style={styles.recentSection}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+            {t('Recent Materials')}
+          </Text>
           {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={theme.primary} />
-              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
-                {t('home.loading')}
-              </Text>
-            </View>
-          ) : recentMaterials.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                {t('home.noMaterials')}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.recentList}>
-              {recentMaterials.map((item, index) => (
+            <ActivityIndicator size="large" color={theme.primary} />
+          ) : materials.length > 0 ? (
+            <>
+              {materials.map((item, index) => (
                 <MaterialCard
-                  key={item.id}
+                  key={item.id || index}
                   item={item}
+                  onPress={() => navigation.navigate('MaterialDetail', { id: item.id })}
                   delay={index * 100}
-                  onPress={() => navigation.navigate('MaterialDetails', { material: item })}
                 />
               ))}
+              <TouchableOpacity
+                style={[styles.seeAllButton, { backgroundColor: theme.primaryContainer }]}
+                onPress={() => navigation.navigate('Materials')}
+              >
+                <Text style={[styles.seeAllText, { color: theme.onPrimaryContainer }]}>
+                  {t('See All Materials')}
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                {t('No materials available')}
+              </Text>
             </View>
           )}
         </View>
       </ScrollView>
-    </SafeScreen>
+    </ScreenLayout>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'transparent',
   },
-  contentContainer: {
-    paddingBottom: 20,
-  },
-  headerGradient: {
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
-    paddingBottom: 24,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-  },
-  welcomeSection: {
+  scrollView: {
     flex: 1,
   },
-  greeting: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 8,
-    letterSpacing: 0.5,
+  scrollContent: {
+    padding: 20,
   },
-  subtitle: {
-    fontSize: 16,
-    opacity: 0.8,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerAnimation: {
-    width: 80,
-    height: 80,
-    marginRight: 12,
-  },
-  notificationButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 16,
-  },
-  section: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
-  featuresSection: {
-    marginTop: -20,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
+  header: {
+    flexDirection: 'column',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  seeAllButton: {
+  welcomeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
+    gap: 30,
   },
-  seeAllText: {
-    fontSize: 14,
-    marginRight: 4,
+  logo: {
+    width: 60,
+    height: 60,
+  },
+  greeting: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  subGreeting: {
+    fontSize: 16,
   },
   featuresGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginHorizontal: -8,
+    padding: 0,
   },
   cardWrapper: {
     width: '48%',
-    marginBottom: 16,
-    borderRadius: 16,
-    overflow: 'hidden',
+    marginBottom: 15,
   },
   card: {
-    padding: 16,
-    height: 120,
-    borderRadius: 16,
+    padding: 15,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    height: 120,
     justifyContent: 'space-between',
   },
   cardIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   cardTitle: {
     color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
-    marginTop: 12,
   },
-  recentList: {
-    marginTop: 8,
+  recentSection: {
+    marginTop: 20,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   recentCard: {
     flexDirection: 'row',
-    padding: 12,
-    borderRadius: 12,
+    alignItems: 'left',
+    padding: 20,
+    marginHorizontal: 0,
     marginBottom: 12,
+    borderRadius: 12,
     borderWidth: 1,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: 4,
   },
   recentCardContent: {
     flex: 1,
-    marginRight: 12,
-  },
-  thumbnail: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    backgroundColor: '#f0f0f0',
-  },
-  thumbnailPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  activityIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  recentCardContent: {
-    flex: 1,
+    marginHorizontal: 2,
   },
   recentCardTitle: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
     marginBottom: 4,
   },
-  recentCardTime: {
-    fontSize: 13,
+  description: {
+    fontSize: 14,
+    marginBottom: 4,
   },
-  recentCardSubject: {
-    fontSize: 12,
+  cardMetaContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: 4,
-    opacity: 0.8,
   },
-  loadingContainer: {
+  subjectTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  subjectText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  priceText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  fileIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  thumbnail: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+  },
+  emptyContainer: {
     padding: 20,
     alignItems: 'center',
   },
-  metadataContainer: {
+  emptyText: {
+    fontSize: 16,
+  },
+  seeAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
-    flexWrap: 'wrap',
+    justifyContent: 'center',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 10,
   },
-  metadataItem: {
+  seeAllText: {
+    fontSize: 14,
+    marginRight: 4,
+  },
+  menuGrid: {
+    flexDirection: 'column',
+    gap: 16,
+  },
+  menuItem: {
+    width: '100%',
     flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  metadataText: {
-    fontSize: 12,
-    marginLeft: 4,
-    opacity: 0.8,
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    backgroundColor: '#FF0000',
-    borderRadius: 10,
     padding: 2,
-    paddingHorizontal: 4,
+    borderRadius: 12,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
   },
-  notificationBadgeText: {
-    fontSize: 12,
-    color: '#FFF',
-  },
-  scrollView: {
-    flex: 1,
+  menuItemText: {
+    marginLeft: 16,
+    fontSize: 18,
+    fontWeight: '500',
   },
 });
+
+export default HomeScreen;

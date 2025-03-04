@@ -23,6 +23,7 @@ import SafeScreen from '../components/SafeScreen';
 import { AnimatedBackground } from '../components/AnimatedBackground';
 import TextComponent from '../components/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScreenLayout } from '../components/ScreenLayout';
 
 const MODES = {
   ALL: 'all',
@@ -144,7 +145,7 @@ const MaterialCard = memo(({ item, onPress, theme, index }) => {
   return (
     <Animated.View style={{ opacity: fadeAnim }}>
       <TouchableOpacity
-        style={[styles.materialCard, { backgroundColor: colors.card, borderColor: colors.border, width: cardWidth }]}
+        style={[styles.materialCard, { backgroundColor: colors.card, borderColor: colors.border, width: '100%' }]}
         onPress={() => onPress(item)}
         activeOpacity={0.7}
       >
@@ -684,76 +685,81 @@ const MaterialsScreen = ({ route, navigation }) => {
   };
 
   return (
-    <SafeScreen style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar
-        barStyle={Platform.OS === 'ios' ? 'dark-content' : 'light-content'}
-        backgroundColor={colors.background}
-      />
-      
-      {showSearch && (
-        <SearchBar
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          onSubmitEditing={handleSearch}
-          placeholder={t('materials.search.placeholder')}
-          style={styles.searchBar}
+    <ScreenLayout>
+      <View style={styles.container}>
+        <StatusBar
+          barStyle={Platform.OS === 'ios' ? 'dark-content' : 'light-content'}
+          backgroundColor={colors.background}
         />
-      )}
-
-      {mode === MODES.FIND && (
-        <View style={styles.breadcrumbContainer}>
-          {currentPath.map((path, index) => (
-            <React.Fragment key={path.level}>
-              <TouchableOpacity
-                onPress={() => handleBreadcrumbPress(index)}
-                style={styles.breadcrumbItem}
-              >
-                <TextComponent
-                  style={[
-                    styles.breadcrumbText,
-                    { color: colors.primary },
-                    index === currentPath.length - 1 && styles.activeBreadcrumb,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {t(`materials.hierarchy.${path.level}`)}
-                </TextComponent>
-              </TouchableOpacity>
-              {index < currentPath.length - 1 && (
-                <TextComponent style={[styles.breadcrumbSeparator, { color: colors.textSecondary }]}>
-                  /
-                </TextComponent>
-              )}
-            </React.Fragment>
-          ))}
-        </View>
-      )}
-
-      <FlatList
-        ref={flatListRef}
-        data={mode === MODES.FIND && currentLevel !== HIERARCHY_LEVELS.MATERIALS ? hierarchyData : materials}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={[
-          styles.list,
-          { paddingBottom: Math.max(16, bottom + 80) }
-        ]}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={renderEmptyList}
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5}
-        maxToRenderPerBatch={10}
-        windowSize={5}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
+        
+        {showSearch && (
+          <SearchBar
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onSubmitEditing={handleSearch}
+            placeholder={t('materials.search.placeholder')}
+            style={styles.searchBar}
           />
-        }
-      />
-    </SafeScreen>
+        )}
+
+        {mode === MODES.FIND && (
+          <View style={styles.breadcrumbContainer}>
+            {currentPath.map((path, index) => (
+              <React.Fragment key={path.level}>
+                <TouchableOpacity
+                  onPress={() => handleBreadcrumbPress(index)}
+                  style={styles.breadcrumbItem}
+                >
+                  <TextComponent
+                    style={[
+                      styles.breadcrumbText,
+                      { color: colors.primary },
+                      index === currentPath.length - 1 && styles.activeBreadcrumb,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {t(`materials.hierarchy.${path.level}`)}
+                  </TextComponent>
+                </TouchableOpacity>
+                {index < currentPath.length - 1 && (
+                  <TextComponent style={[styles.breadcrumbSeparator, { color: colors.textSecondary }]}>
+                    /
+                  </TextComponent>
+                )}
+              </React.Fragment>
+            ))}
+          </View>
+        )}
+
+        <FlatList
+          ref={flatListRef}
+          data={mode === MODES.FIND && currentLevel !== HIERARCHY_LEVELS.MATERIALS ? hierarchyData : materials}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={[
+            styles.list,
+            { 
+              paddingTop: Platform.OS === 'android' ? 0 : 8, 
+              paddingBottom: Math.max(16, bottom + 80) 
+            }
+          ]}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={renderEmptyList}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
+        />
+      </View>
+    </ScreenLayout>
   );
 };
 
@@ -764,7 +770,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    paddingTop: Platform.OS === 'android' ? 0 : 8,
   },
   headerRight: {
     flexDirection: 'row',
@@ -805,7 +811,7 @@ const styles = StyleSheet.create({
   },
   list: {
     padding: 16,
-    flexGrow: 1,
+    width: '100%',
   },
   emptyContainer: {
     flex: 1,
@@ -873,6 +879,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 16,
     marginBottom: 16,
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
   },
   cardHeader: {
     flexDirection: 'row',

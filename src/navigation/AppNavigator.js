@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -37,18 +37,17 @@ function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        headerShown: false, // Hide the default header
+        headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
-          let iconColor = focused ? '#6803FF' : 'rgba(0, 0, 0, 0.7)';
-          let backgroundColor = focused ? 'rgba(104, 3, 255, 0.1)' : 'transparent';
+          let iconColor = focused ? '#6803FF' : '#666666';
 
           switch (route.name) {
             case 'Home':
               iconName = focused ? 'home' : 'home-outline';
               break;
             case 'Materials':
-              iconName = focused ? 'book' : 'book-outline';
+              iconName = focused ? 'library' : 'library-outline';
               break;
             case 'Downloads':
               iconName = focused ? 'download' : 'download-outline';
@@ -64,48 +63,54 @@ function MainTabs() {
           return (
             <View 
               style={{
-                backgroundColor,
-                borderRadius: 12,
-                padding: 8,
                 alignItems: 'center',
                 justifyContent: 'center',
+                width: 48,
+                height: 32,
               }}
             >
-              <Icon name={iconName} size={size} color={iconColor} />
+              <Icon name={iconName} size={24} color={iconColor} />
+              {focused && (
+                <View 
+                  style={{
+                    position: 'absolute',
+                    bottom: -8,
+                    width: 4,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: '#6803FF',
+                  }}
+                />
+              )}
             </View>
           );
         },
         tabBarStyle: {
-          height: 86,
-          paddingBottom: 10,
-          paddingTop: 10,
+          height: 64,
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
-          borderTopColor: 'rgba(104, 3, 255, 0.1)',
-          elevation: 10,
+          borderTopColor: '#F0F0F0',
+          elevation: 8,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
-          shadowRadius: 4,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          position: 'absolute', // Make tab bar float
-          bottom: 0,
-          left: 0,
-          right: 0,
+          shadowRadius: 3,
+          paddingHorizontal: 8,
+          paddingTop: 8,
+          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
         },
         tabBarItemStyle: {
-          margin: 5,
-          borderRadius: 20,
+          paddingVertical: 4,
         },
         tabBarActiveTintColor: '#6803FF',
-        tabBarInactiveTintColor: 'rgba(0, 0, 0, 0.7)',
+        tabBarInactiveTintColor: '#666666',
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: '600',
-          marginBottom: 1,
+          fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+          fontWeight: '500',
+          marginTop: 4,
         },
-        tabBarHideOnKeyboard: true, // Hide tab bar when keyboard is shown
+        tabBarHideOnKeyboard: true,
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: t('navigation.home') }} />

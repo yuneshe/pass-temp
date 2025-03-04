@@ -1,14 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  interpolate,
-} from 'react-native-reanimated';
+import { StyleSheet, Text, TouchableOpacity, Animated } from 'react-native';
 import { useSettings } from '../context/SettingsContext';
-
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 export const AnimatedButton = ({
   onPress,
@@ -19,19 +11,21 @@ export const AnimatedButton = ({
   ...props
 }) => {
   const { theme } = useSettings();
-  const pressed = useSharedValue(0);
+  const scale = new Animated.Value(1);
 
-  const animatedStyle = useAnimatedStyle(() => {
-    const scale = interpolate(
-      pressed.value,
-      [0, 1],
-      [1, 0.95]
-    );
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
 
-    return {
-      transform: [{ scale }],
-    };
-  });
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
 
   const getButtonStyle = () => {
     switch (variant) {
@@ -68,33 +62,29 @@ export const AnimatedButton = ({
     }
   };
 
-  const handlePressIn = () => {
-    pressed.value = withSpring(1);
-  };
-
-  const handlePressOut = () => {
-    pressed.value = withSpring(0);
-  };
-
   return (
-    <AnimatedTouchable
+    <TouchableOpacity
       onPress={onPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={disabled}
-      style={[
-        styles.button,
-        getButtonStyle(),
-        animatedStyle,
-        disabled && styles.disabled,
-        style,
-      ]}
-      {...props}
+      activeOpacity={1}
     >
-      <Text style={[styles.buttonText, getTextStyle()]}>
-        {title}
-      </Text>
-    </AnimatedTouchable>
+      <Animated.View
+        style={[
+          styles.button,
+          getButtonStyle(),
+          disabled && styles.disabled,
+          style,
+          { transform: [{ scale }] },
+        ]}
+        {...props}
+      >
+        <Text style={[styles.buttonText, getTextStyle()]}>
+          {title}
+        </Text>
+      </Animated.View>
+    </TouchableOpacity>
   );
 };
 

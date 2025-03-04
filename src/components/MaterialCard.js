@@ -3,10 +3,10 @@ import {
   View,
   Image,
   TouchableOpacity,
+  Animated,
   StyleSheet,
   Platform,
 } from 'react-native';
-import { useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSettings } from '../context/SettingsContext';
 import { getTheme } from '../theme';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -58,6 +58,21 @@ const MaterialCard = ({
 }) => {
   const { isDarkMode } = useSettings();
   const theme = getTheme(isDarkMode);
+  const scale = new Animated.Value(1);
+
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
 
   if (!material || typeof material !== 'object') return null;
 
@@ -82,92 +97,98 @@ const MaterialCard = ({
   return (
     <TouchableOpacity
       onPress={() => onPress(material)}
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.colors.card,
-          width: width || '100%',
-        },
-        style,
-      ]}
-      activeOpacity={0.7}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      activeOpacity={1}
     >
-      <View style={styles.imageContainer}>
-        {thumbnail ? (
-          <Image
-            source={{ uri: thumbnail }}
-            style={styles.thumbnail}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.border }]}>
-            <Icon name={fileIcon} size={40} color={theme.colors.text} />
-          </View>
-        )}
-        <View
-          style={[
-            styles.overlay,
-            {
-              backgroundColor: isDarkMode 
-                ? 'rgba(0, 0, 0, 0.5)' 
-                : 'rgba(255, 255, 255, 0.8)',
-            }
-          ]}
-        >
-          <View style={styles.fileInfo}>
-            <Icon name={fileIcon} size={16} color={theme.colors.text} />
-            <Text style={[styles.fileSize, { color: theme.colors.text }]}>
-              {formatFileSize(size)}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.content}>
-        <Text numberOfLines={2} style={[styles.title, { color: theme.colors.text }]}>
-          {title}
-        </Text>
-        
-        <View style={styles.metaContainer}>
-          <View style={styles.meta}>
-            <Icon name="person-outline" size={14} color={theme.colors.text} style={styles.metaIcon} />
-            <Text style={[styles.metaText, { color: theme.colors.text }]} numberOfLines={1}>
-              {author || 'Unknown'}
-            </Text>
-          </View>
-          
-          <View style={styles.meta}>
-            <Icon name="download-outline" size={14} color={theme.colors.text} style={styles.metaIcon} />
-            <Text style={[styles.metaText, { color: theme.colors.text }]}>
-              {downloads_stats?.total || 0}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.footer}>
-          <View style={styles.badges}>
-            {category && (
-              <View style={[styles.badge, { backgroundColor: theme.colors.primary + '15' }]}>
-                <Text style={[styles.badgeText, { color: theme.colors.primary }]} numberOfLines={1}>
-                  {typeof category === 'object' ? category.name : category}
-                </Text>
-              </View>
-            )}
-            {level && (
-              <View style={[styles.badge, { backgroundColor: theme.colors.secondary + '15' }]}>
-                <Text style={[styles.badgeText, { color: theme.colors.secondary }]} numberOfLines={1}>
-                  {typeof level === 'object' ? level.name : level}
-                </Text>
-              </View>
-            )}
-          </View>
-          {price > 0 && (
-            <Text style={[styles.price, { color: theme.colors.primary }]}>
-              {formatPrice(price)}
-            </Text>
+      <Animated.View 
+        style={[
+          styles.container,
+          {
+            backgroundColor: theme.colors.card,
+            width: width || '100%',
+            transform: [{ scale }],
+          },
+          style,
+        ]}
+      >
+        <View style={styles.imageContainer}>
+          {thumbnail ? (
+            <Image
+              source={{ uri: thumbnail }}
+              style={styles.thumbnail}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.border }]}>
+              <Icon name={fileIcon} size={40} color={theme.colors.text} />
+            </View>
           )}
+          <View
+            style={[
+              styles.overlay,
+              {
+                backgroundColor: isDarkMode 
+                  ? 'rgba(0, 0, 0, 0.5)' 
+                  : 'rgba(255, 255, 255, 0.8)',
+              }
+            ]}
+          >
+            <View style={styles.fileInfo}>
+              <Icon name={fileIcon} size={16} color={theme.colors.text} />
+              <Text style={[styles.fileSize, { color: theme.colors.text }]}>
+                {formatFileSize(size)}
+              </Text>
+            </View>
+          </View>
         </View>
-      </View>
+
+        <View style={styles.content}>
+          <Text numberOfLines={2} style={[styles.title, { color: theme.colors.text }]}>
+            {title}
+          </Text>
+          
+          <View style={styles.metaContainer}>
+            <View style={styles.meta}>
+              <Icon name="person-outline" size={14} color={theme.colors.text} style={styles.metaIcon} />
+              <Text style={[styles.metaText, { color: theme.colors.text }]} numberOfLines={1}>
+                {author || 'Unknown'}
+              </Text>
+            </View>
+            
+            <View style={styles.meta}>
+              <Icon name="download-outline" size={14} color={theme.colors.text} style={styles.metaIcon} />
+              <Text style={[styles.metaText, { color: theme.colors.text }]}>
+                {downloads_stats?.total || 0}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.footer}>
+            <View style={styles.badges}>
+              {category && (
+                <View style={[styles.badge, { backgroundColor: theme.colors.primary + '15' }]}>
+                  <Text style={[styles.badgeText, { color: theme.colors.primary }]} numberOfLines={1}>
+                    {typeof category === 'object' ? category.name : category}
+                  </Text>
+                </View>
+              )}
+              {level && (
+                <View style={[styles.badge, { backgroundColor: theme.colors.secondary + '15' }]}>
+                  <Text style={[styles.badgeText, { color: theme.colors.secondary }]} numberOfLines={1}>
+                    {typeof level === 'object' ? level.name : level}
+                  </Text>
+                </View>
+              )}
+            </View>
+            {price > 0 && (
+              <Text style={[styles.price, { color: theme.colors.primary }]}>
+                {formatPrice(price)}
+              </Text>
+            )}
+          </View>
+        </View>
+      </Animated.View>
     </TouchableOpacity>
   );
 };

@@ -20,7 +20,6 @@ import * as IntentLauncher from 'expo-intent-launcher';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next';
-import SafeScreen from '../components/SafeScreen';
 import api from '../config/api';
 import { useTheme } from '../context/ThemeContext';
 import { formatFileSize, formatPrice, getFileTypeIcon } from '../utils/formatters';
@@ -28,6 +27,7 @@ import Text from '../components/Text';
 import FlutterwaveService from '../services/flutterwaveService';
 import { PayWithFlutterwave } from 'flutterwave-react-native';
 import MoMoPaymentModal from '../components/MoMoPaymentModal';
+import { ScreenLayout } from '../components/ScreenLayout';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -513,245 +513,232 @@ export default function MaterialDetailsScreen({ route, navigation }) {
     setShowImageViewer(false);
   };
 
-  if (isLoading) {
-    return (
-      <SafeScreen>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.primary} />
-        </View>
-      </SafeScreen>
-    );
-  }
-
-  if (!material) {
-    return (
-      <SafeScreen>
-        <View style={styles.errorContainer}>
-          <Text style={[styles.errorText, { color: theme.textPrimary }]}>
-            {t('materialDetails.alerts.materialNotFound')}
-          </Text>
-        </View>
-      </SafeScreen>
-    );
-  }
-
   return (
-    <SafeScreen>
-      <LinearGradient
-        colors={[theme.primary + '20', theme.background]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 0.3 }}
-        style={styles.container}
+    <ScreenLayout>
+      <ScrollView 
+        style={[styles.container, { backgroundColor: theme.background }]}
+        contentContainerStyle={styles.contentContainer}
       >
-        <ImageViewer
-          visible={showImageViewer}
-          imageUrl={material.thumbnail}
-          onClose={handleCloseImage}
-        />
-        <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.content}
-        >
-          <View style={styles.header}>
-            <View style={styles.headerContent}>
-              <TouchableOpacity
-                style={[styles.headerButton, { backgroundColor: theme.surfaceVariant }]}
-                onPress={() => navigation.goBack()}
-              >
-                <Icon name="arrow-back" size={24} color={theme.primary} />
-              </TouchableOpacity>
-              <View>
-                <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
-                  {t('materialDetails.header.title')}
-                </Text>
-                <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
-                  {t('materialDetails.header.subtitle')}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.headerButton, { backgroundColor: theme.surfaceVariant }]}
-                onPress={() => Alert.alert(t('materialDetails.alerts.share'), t('materialDetails.alerts.shareComingSoon'))}
-              >
-                <Icon name="share-social" size={24} color={theme.primary} />
-              </TouchableOpacity>
-            </View>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.primary} />
           </View>
-
-          <View 
-            style={styles.materialContent}
-          >
+        ) : (
+          <>
+            <ImageViewer
+              visible={showImageViewer}
+              imageUrl={material.thumbnail}
+              onClose={handleCloseImage}
+            />
             <LinearGradient
-              colors={[theme.surfaceVariant, theme.surface]}
+              colors={[theme.primary + '20', theme.background]}
               start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={[styles.materialCard, { borderColor: theme.border }]}
+              end={{ x: 0, y: 0.3 }}
+              style={styles.container}
             >
-              <TouchableOpacity
-                style={styles.thumbnailContainer}
-                onPress={handleViewImage}
-                activeOpacity={0.9}
-              >
-                <Image
-                  source={material.thumbnail 
-                    ? { uri: material.thumbnail } 
-                    : require('../assets/images/default-thumbnail.png')}
-                  style={styles.thumbnail}
-                  resizeMode="cover"
-                  
-                  onError={(error) => console.error('Image loading error:', error.nativeEvent.error)}
-                  onLoad={() => console.log('Image loaded successfully:', material.thumbnail)}
-                />
-                <LinearGradient
-                  colors={['transparent', 'rgba(0,0,0,0.8)']}
-                  style={styles.thumbnailOverlay}
-                />
-                <View style={styles.cardHeader}>
-                  <View style={styles.iconContainer}>
-                    <Icon name={getFileTypeIcon(material.type)} size={24} color="white" />
-                  </View>
-                  <View style={styles.titleContainer}>
-                    <Text style={styles.title} numberOfLines={2}>{material.title}</Text>
-                    <Text style={styles.subtitle} numberOfLines={1}>{material.category?.name}</Text>
-                  </View>
-                  {material.price > 0 ? (
-                    <View style={[styles.priceBadge, { backgroundColor: theme.primary }]}>
-                      <Text style={styles.priceText}>{formatPrice(material.price)}</Text>
-                    </View>
-                  ) : (
-                    <View style={[styles.priceBadge, { backgroundColor: '#E3F2FD' }]}>
-                      <Text style={[styles.priceText, { color: '#2196F3' }]}>FREE</Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-
-              <View style={styles.cardContent}>
-                <Text 
-                  style={[
-                    styles.description, 
-                    { 
-                      color: theme.textPrimary, 
-                      fontWeight: '900', 
-                      fontSize: 17, 
-                      lineHeight: 26, 
-                      letterSpacing: 0.7,
-                      opacity: 0.9
-                    }
-                  ]} 
-                >
-                  {material.description}
-                </Text>
-
-                <View style={styles.statsGrid}>
-                  <View style={styles.statsItem}>
-                    <Icon name="document-outline" size={16} color={theme.textSecondary} />
-                    <Text style={[styles.statsText, { color: theme.textSecondary, fontWeight: 'bold' }]}>
-                      {t('materialDetails.stats.fileSize')}: {fileSize || t('materialDetails.stats.unknown')}
+              <View style={styles.header}>
+                <View style={styles.headerContent}>
+                  <TouchableOpacity
+                    style={[styles.headerButton, { backgroundColor: theme.surfaceVariant }]}
+                    onPress={() => navigation.goBack()}
+                  >
+                    <Icon name="arrow-back" size={24} color={theme.primary} />
+                  </TouchableOpacity>
+                  <View>
+                    <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
+                      {t('materialDetails.header.title')}
+                    </Text>
+                    <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
+                      {t('materialDetails.header.subtitle')}
                     </Text>
                   </View>
+                  <TouchableOpacity
+                    style={[styles.headerButton, { backgroundColor: theme.surfaceVariant }]}
+                    onPress={() => Alert.alert(t('materialDetails.alerts.share'), t('materialDetails.alerts.shareComingSoon'))}
+                  >
+                    <Icon name="share-social" size={24} color={theme.primary} />
+                  </TouchableOpacity>
                 </View>
+              </View>
 
-                <View style={[styles.metadataContainer, { backgroundColor: theme.surfaceVariant }]}>
-                  <MetadataItem label={t('materialDetails.metadata.category')} value={material.category?.name} theme={theme} navigation={navigation} item={material.category} />
-                  <MetadataItem label={t('materialDetails.metadata.subject')} value={material.subject?.name} theme={theme} navigation={navigation} item={material.subject} />
-                  <MetadataItem label={t('materialDetails.metadata.level')} value={material.level?.name} theme={theme} navigation={navigation} item={material.level} />
-                  
-                  <View style={styles.metadataItem}>
-                    <Text style={styles.metadataLabel}>{t('materialDetails.metadata.status')}</Text>
-                    <View 
+              <View 
+                style={styles.materialContent}
+              >
+                <LinearGradient
+                  colors={[theme.surfaceVariant, theme.surface]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={[styles.materialCard, { borderColor: theme.border }]}
+                >
+                  <TouchableOpacity
+                    style={styles.thumbnailContainer}
+                    onPress={handleViewImage}
+                    activeOpacity={0.9}
+                  >
+                    <Image
+                      source={material.thumbnail 
+                        ? { uri: material.thumbnail } 
+                        : require('../assets/images/default-thumbnail.png')}
+                      style={styles.thumbnail}
+                      resizeMode="cover"
+                      
+                      onError={(error) => console.error('Image loading error:', error.nativeEvent.error)}
+                      onLoad={() => console.log('Image loaded successfully:', material.thumbnail)}
+                    />
+                    <LinearGradient
+                      colors={['transparent', 'rgba(0,0,0,0.8)']}
+                      style={styles.thumbnailOverlay}
+                    />
+                    <View style={styles.cardHeader}>
+                      <View style={styles.iconContainer}>
+                        <Icon name={getFileTypeIcon(material.type)} size={24} color="white" />
+                      </View>
+                      <View style={styles.titleContainer}>
+                        <Text style={styles.title} numberOfLines={2}>{material.title}</Text>
+                        <Text style={styles.subtitle} numberOfLines={1}>{material.category?.name}</Text>
+                      </View>
+                      {material.price > 0 ? (
+                        <View style={[styles.priceBadge, { backgroundColor: theme.primary }]}>
+                          <Text style={styles.priceText}>{formatPrice(material.price)}</Text>
+                        </View>
+                      ) : (
+                        <View style={[styles.priceBadge, { backgroundColor: '#E3F2FD' }]}>
+                          <Text style={[styles.priceText, { color: '#2196F3' }]}>FREE</Text>
+                        </View>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+
+                  <View style={styles.cardContent}>
+                    <Text 
                       style={[
-                        styles.statusBadge, 
+                        styles.description, 
                         { 
-                          backgroundColor: material.price === 0
-                            ? 'rgba(33, 150, 243, 0.2)' 
-                            : material.status === 'paid' 
-                              ? 'rgba(76, 175, 80, 0.2)' 
-                              : 'rgba(244, 67, 54, 0.2)' 
+                          color: theme.textPrimary, 
+                          fontWeight: '900', 
+                          fontSize: 17, 
+                          lineHeight: 26, 
+                          letterSpacing: 0.7,
+                          opacity: 0.9
                         }
-                      ]}
+                      ]} 
                     >
-                      <Text 
+                      {material.description}
+                    </Text>
+
+                    <View style={styles.statsGrid}>
+                      <View style={styles.statsItem}>
+                        <Icon name="document-outline" size={16} color={theme.textSecondary} />
+                        <Text style={[styles.statsText, { color: theme.textSecondary, fontWeight: 'bold' }]}>
+                          {t('materialDetails.stats.fileSize')}: {fileSize || t('materialDetails.stats.unknown')}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={[styles.metadataContainer, { backgroundColor: theme.surfaceVariant }]}>
+                      <MetadataItem label={t('materialDetails.metadata.category')} value={material.category?.name} theme={theme} navigation={navigation} item={material.category} />
+                      <MetadataItem label={t('materialDetails.metadata.subject')} value={material.subject?.name} theme={theme} navigation={navigation} item={material.subject} />
+                      <MetadataItem label={t('materialDetails.metadata.level')} value={material.level?.name} theme={theme} navigation={navigation} item={material.level} />
+                      
+                      <View style={styles.metadataItem}>
+                        <Text style={styles.metadataLabel}>{t('materialDetails.metadata.status')}</Text>
+                        <View 
+                          style={[
+                            styles.statusBadge, 
+                            { 
+                              backgroundColor: material.price === 0
+                                ? 'rgba(33, 150, 243, 0.2)' 
+                                : material.status === 'paid' 
+                                  ? 'rgba(76, 175, 80, 0.2)' 
+                                  : 'rgba(244, 67, 54, 0.2)' 
+                            }
+                          ]}
+                        >
+                          <Text 
+                            style={[
+                              styles.statusText, 
+                              { 
+                                color: material.price === 0
+                                  ? '#2196F3' 
+                                  : material.status === 'paid' 
+                                    ? 'green' 
+                                    : 'red' 
+                              }
+                            ]}
+                          >
+                            {material.price === 0 ? t('materialDetails.metadata.free') : material.status === 'paid' ? t('materialDetails.metadata.paid') : t('materialDetails.metadata.unpaid')}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {isDownloading ? (
+                      <View style={[styles.actionButton, { backgroundColor: theme.primary }]}>
+                        <ActivityIndicator color="white" style={styles.buttonIcon} />
+                        <Text style={styles.buttonText}>
+                          {t('materialDetails.loading.downloading')}... {Math.round(downloadProgress * 100)}%
+                        </Text>
+                      </View>
+                    ) : downloadedFile ? (
+                      <TouchableOpacity 
+                        style={[styles.actionButton, { backgroundColor: '#4CAF50' }]}
+                        onPress={handleView}
+                      >
+                        <Icon name="eye-outline" size={24} color="white" style={styles.buttonIcon} />
+                        <Text style={styles.buttonText}>{t('materialDetails.actions.view')}</Text>
+                      </TouchableOpacity>
+                    ) : material.price > 0 && !material.has_purchase ? (
+                      <TouchableOpacity 
                         style={[
-                          styles.statusText, 
+                          styles.purchaseButton, 
                           { 
-                            color: material.price === 0
-                              ? '#2196F3' 
-                              : material.status === 'paid' 
-                                ? 'green' 
-                                : 'red' 
+                            backgroundColor: theme.primary,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                           }
                         ]}
+                        onPress={handlePurchase}
+                        disabled={isLoading}
                       >
-                        {material.price === 0 ? t('materialDetails.metadata.free') : material.status === 'paid' ? t('materialDetails.metadata.paid') : t('materialDetails.metadata.unpaid')}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                {isDownloading ? (
-                  <View style={[styles.actionButton, { backgroundColor: theme.primary }]}>
-                    <ActivityIndicator color="white" style={styles.buttonIcon} />
-                    <Text style={styles.buttonText}>
-                      {t('materialDetails.loading.downloading')}... {Math.round(downloadProgress * 100)}%
-                    </Text>
-                  </View>
-                ) : downloadedFile ? (
-                  <TouchableOpacity 
-                    style={[styles.actionButton, { backgroundColor: '#4CAF50' }]}
-                    onPress={handleView}
-                  >
-                    <Icon name="eye-outline" size={24} color="white" style={styles.buttonIcon} />
-                    <Text style={styles.buttonText}>{t('materialDetails.actions.view')}</Text>
-                  </TouchableOpacity>
-                ) : material.price > 0 && !material.has_purchase ? (
-                  <TouchableOpacity 
-                    style={[
-                      styles.purchaseButton, 
-                      { 
-                        backgroundColor: theme.primary,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }
-                    ]}
-                    onPress={handlePurchase}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <ActivityIndicator color="white" style={styles.buttonIcon} />
-                        <Text style={styles.purchaseButtonText}>
-                          {t('materialDetails.loading.processing')}
-                        </Text>
-                      </>
+                        {isLoading ? (
+                          <>
+                            <ActivityIndicator color="white" style={styles.buttonIcon} />
+                            <Text style={styles.purchaseButtonText}>
+                              {t('materialDetails.loading.processing')}
+                            </Text>
+                          </>
+                        ) : (
+                          <>
+                            <Icon 
+                              name="cart" 
+                              size={20} 
+                              color="white" 
+                              style={{ marginRight: 10 }} 
+                            />
+                            <Text style={styles.purchaseButtonText}>
+                              {t('materialDetails.actions.purchase')} - {formatPrice(material.price)}
+                            </Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
                     ) : (
-                      <>
-                        <Icon 
-                          name="cart" 
-                          size={20} 
-                          color="white" 
-                          style={{ marginRight: 10 }} 
-                        />
-                        <Text style={styles.purchaseButtonText}>
-                          {t('materialDetails.actions.purchase')} - {formatPrice(material.price)}
-                        </Text>
-                      </>
+                      <TouchableOpacity 
+                        style={[styles.actionButton, { backgroundColor: theme.primary }]}
+                        onPress={handleDownload}
+                      >
+                        <Icon name="download-outline" size={24} color="white" style={styles.buttonIcon} />
+                        <Text style={styles.buttonText}>{t('materialDetails.actions.download')}</Text>
+                      </TouchableOpacity>
                     )}
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity 
-                    style={[styles.actionButton, { backgroundColor: theme.primary }]}
-                    onPress={handleDownload}
-                  >
-                    <Icon name="download-outline" size={24} color="white" style={styles.buttonIcon} />
-                    <Text style={styles.buttonText}>{t('materialDetails.actions.download')}</Text>
-                  </TouchableOpacity>
-                )}
+                  </View>
+                </LinearGradient>
               </View>
             </LinearGradient>
-          </View>
-        </ScrollView>
-      </LinearGradient>
+          </>
+        )}
+      </ScrollView>
+
       {showPayment && paymentOptions && (
         <PayWithFlutterwave
           onRedirect={handlePaymentComplete}
@@ -764,7 +751,7 @@ export default function MaterialDetailsScreen({ route, navigation }) {
         material={material}
         onPaymentSuccess={handleMoMoPaymentSuccess}
       />
-    </SafeScreen>
+    </ScreenLayout>
   );
 }
 
@@ -772,10 +759,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
+  contentContainer: {
     flexGrow: 1,
   },
   header: {
