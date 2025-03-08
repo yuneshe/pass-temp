@@ -1,19 +1,14 @@
 {
   "expo": {
-    "name": "pass-temp",
-    "slug": "pass-temp",
+    "name": "pass",
+    "slug": "pass-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "expo": {
-      "android": {
-        "minSdkVersion": 29
-      }
-    },
     "splash": {
-      "image": "./assets/logo.png",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -22,18 +17,19 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.png",
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anslemo.passtemp"
+      "package": "com.anslemo.passapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "979b7887-76bf-4848-910d-140ec0a483b3"
+        "projectId": "9f90833d-3c8b-451e-a3c0-0eecdc144002"
       }
-    }
+    },
+    "owner": "anslemo"
   }
 }
